@@ -4,6 +4,10 @@ Imported from Checkers repository https://github.com/gpatt45/checkers_bot
 
 Changes in progress to adapt the game to chess
 
+## Architecture
+
+![Architecture of application](./images/architecture.png)
+
 ## How to Run
 
 ### Windows
