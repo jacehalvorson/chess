@@ -9,7 +9,7 @@ def main():
    pygame.init()
    
    # Create objects for each block on the board
-   initBoard()
+   initBoardGraphics()
    
    # Set up checkers game
    game = chess.Board()
@@ -31,7 +31,7 @@ def main():
    while loop:
       # Check for input
       for event in pygame.event.get():
-         if event.type == pygame.MOUSEBUTTONDOWN and game.turn == userColor:
+         if event.type == pygame.MOUSEBUTTONDOWN:
             clickHandler(game, pygame.mouse.get_pos(), userColor)
          elif event.type == pygame.QUIT:
             loop = False
@@ -43,17 +43,12 @@ def main():
       for square in chess.SQUARES:
          piece = game.piece_at(square)
          if piece != None:
-            # Use column as is (start at 0, end at 7)
-            col = chess.square_file(square)
-
-            # If the user is white, mirror the rows so white is on bottom (start at 7, end at 0)
-            if userColor == chess.WHITE:
-               row = BLOCKS_IN_ROW - 1 - chess.square_rank(square)
-            elif userColor == chess.BLACK:
-               row = chess.square_rank(square)
-
+            (row, col) = squareToDisplayRowCol(square, userColor)
             drawPieceInSquare(screen, piece.symbol(), row, col)
-      
+
+      # Draw in the potential moves
+      drawPotentialMoves(screen, userColor)
+
       # Update the screen
       pygame.display.update()
 

@@ -7,7 +7,7 @@ blockArray = []
 potentialMoves = []
 selectedPiece = None
 
-def initBoard():
+def initBoardGraphics():
    global blockArray
 
    # Set up the blockArray object, this should be called before
@@ -19,21 +19,30 @@ def initBoard():
       
       blockArray.append(row)
 
-def clearPotentialMoves(game):
-   global potentialMoves
-
-   # Clear any potential move icons
-   for move in potentialMoves:
-      game.addPiece(0, move.destination)
-   
-   # Empty the temporary list
-   potentialMoves = []
-
-def getBlockPosition(row, col):
-   return (col * BLOCK_SIZE, row * BLOCK_SIZE)
-
 def getBlockCenter(row, col):
-   return ((col * BLOCK_SIZE) + (BLOCK_SIZE / 2), (row * BLOCK_SIZE) + (BLOCK_SIZE / 2))
+   return ((col * BLOCK_SIZE) + (BLOCK_SIZE // 2), (row * BLOCK_SIZE) + (BLOCK_SIZE // 2))
+
+def squareToDisplayRowCol(square, userColor):
+   col = chess.square_file(square)
+   row = chess.square_rank(square)
+
+   if userColor == chess.WHITE:
+      return (BLOCKS_IN_ROW - 1 - row, col)
+   else:
+      return (row, col)
+
+# Returns chess square of where the user clicked
+def getSquareFromPos(game, mousePos, userColor):
+   # Use column as is (start at 0, end at 7)
+   col = int(mousePos[ 0 ] // BLOCK_SIZE)
+
+   # If the user is white, mirror the rows so white is on bottom (start at 7, end at 0)
+   if userColor == chess.WHITE:
+      row = BLOCKS_IN_ROW - 1 - int(mousePos[ 1 ] // BLOCK_SIZE)
+   elif userColor == chess.BLACK:
+      row = int(mousePos[ 1 ] // BLOCK_SIZE)
+
+   return chess.square(col, row)
 
 def drawBackground(surface):
    global blockArray
@@ -50,44 +59,55 @@ def drawBackground(surface):
             block.fill(BLOCK_0_COLOR)
          else:
             block.fill(BLOCK_1_COLOR)
-         
+
          # Place the block on the screen
-         surface.blit(block, getBlockPosition(row, col))
+         surface.blit(block, (col * BLOCK_SIZE, row * BLOCK_SIZE))
 
-# Returns chess square of where the user clicked
-def getSquareFromPos(game, mousePos):
-   row = math.floor(mousePos[ 1 ] / BLOCK_SIZE)
-   col = math.floor(mousePos[ 0 ] / BLOCK_SIZE)
+def drawPotentialMoves(surface, userColor):
+   # Draw in the potential moves
+   for move in potentialMoves:
+      square = move.to_square
+      (row, col) = squareToDisplayRowCol(square, userColor)
+      block = blockArray[ row ][ col ]
 
-   return chess.square(row, col)
+      # Inner circle
+      pygame.draw.circle(block, POTENTIAL_MOVE_COLOR, (BLOCK_SIZE // 2, BLOCK_SIZE // 2), POTENTIAL_MOVE_RADIUS)
+      # Outer circle for border
+      pygame.draw.circle(block, POTENTIAL_MOVE_BORDER_COLOR, (BLOCK_SIZE // 2, BLOCK_SIZE // 2), POTENTIAL_MOVE_RADIUS, POTENTIAL_MOVE_BORDER_WIDTH)
+
+      # Place the block on the screen again
+      surface.blit(block, (col * BLOCK_SIZE, row * BLOCK_SIZE))
 
 # Check which circle was clicked and what action should be taken.
 # Returns list of potential moves or None
 def clickHandler(game, mousePos, userColor):
    global potentialMoves
 
-   clickedSquare = getSquareFromPos(game, mousePos)
+   clickedSquare = getSquareFromPos(game, mousePos, userColor)
 
-   # If the user is clicking a potential move then move there
-   if clickedSquare in potentialMoves:
-      # Find the move with this destination
-      # TODO move selectedPiece to clickedSquare
-      clearPotentialMoves(game)
+   # If the user is clicking a potential move then move there and exit
+   for move in potentialMoves:
+      if move.to_square == clickedSquare:
+         game.push(move)
+         potentialMoves = []
+         return
 
-   elif game.color_at(clickedSquare) == userColor:
+   # If the user is clicking a piece then show potential moves
+   if game.color_at(clickedSquare) == game.turn:
       # The user clicked one of their pieces
-      clearPotentialMoves(game)
+      potentialMoves = []
 
       # Find potential moves
       for move in game.legal_moves:
          if move.from_square == clickedSquare:
-            potentialMoves.append(move.to_square)
+            potentialMoves.append(move)
+
+   # If the user clicks elsewhere then clear potential moves
+   else:
+      potentialMoves = []
 
 def drawPieceInSquare(surface, pieceText, row, col):
    global blockArray
-
-   # Find the center of the block we're drawing this piece onto
-   block = blockArray[ row ][ col ]
 
    # Find the position of the center of this block
    blockCenter = getBlockCenter(row, col)
