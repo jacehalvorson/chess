@@ -4,7 +4,6 @@ import chess
 from constants import *
 
 blockArray = []
-potentialMoves = []
 selectedPiece = None
 
 def initBoardGraphics():
@@ -63,7 +62,7 @@ def drawBackground(surface):
          # Place the block on the screen
          surface.blit(block, (col * BLOCK_SIZE, row * BLOCK_SIZE))
 
-def drawPotentialMoves(surface, userColor):
+def drawPotentialMoves(surface, potentialMoves, userColor):
    # Draw in the potential moves
    for move in potentialMoves:
       square = move.to_square
@@ -77,34 +76,6 @@ def drawPotentialMoves(surface, userColor):
 
       # Place the block on the screen again
       surface.blit(block, (col * BLOCK_SIZE, row * BLOCK_SIZE))
-
-# Check which circle was clicked and what action should be taken.
-# Returns list of potential moves or None
-def clickHandler(game, mousePos, userColor):
-   global potentialMoves
-
-   clickedSquare = getSquareFromPos(game, mousePos, userColor)
-
-   # If the user is clicking a potential move then move there and exit
-   for move in potentialMoves:
-      if move.to_square == clickedSquare:
-         game.push(move)
-         potentialMoves = []
-         return
-
-   # If the user is clicking a piece then show potential moves
-   if game.color_at(clickedSquare) == game.turn:
-      # The user clicked one of their pieces
-      potentialMoves = []
-
-      # Find potential moves
-      for move in game.legal_moves:
-         if move.from_square == clickedSquare:
-            potentialMoves.append(move)
-
-   # If the user clicks elsewhere then clear potential moves
-   else:
-      potentialMoves = []
 
 def drawPieceInSquare(surface, pieceText, row, col):
    global blockArray
