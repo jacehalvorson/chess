@@ -30,8 +30,8 @@ def main():
 
    # Initialize AI
    if aiVsAi:
-      ai1 = chessAI(chess.WHITE, heuristic='pieceCount')
-      ai2 = chessAI(chess.BLACK, heuristic='pieceCount')
+      ai1 = chessAI(chess.WHITE, heuristic='random')
+      ai2 = chessAI(chess.BLACK, heuristic='random')
    else:
       ai = chessAI(aiColor, heuristic='pieceCount')
 
@@ -69,12 +69,15 @@ def main():
       # Update the screen
       pygame.display.update()
 
+      times = []
+
       # AI's turn
       if aiVsAi:
          if game.turn == chess.WHITE:
             start = timeit.default_timer()
             bestMove = ai1.minimax(game, depth=2)
             print(str(timeit.default_timer() - start) + ' seconds')
+            times.append(timeit.default_timer() - start)
             if bestMove in game.legal_moves:
                game.push(bestMove)
             else:
@@ -85,6 +88,7 @@ def main():
             start = timeit.default_timer()
             bestMove = ai2.minimax(game, depth=2)
             print(str(timeit.default_timer() - start) + ' seconds')
+            times.append(timeit.default_timer() - start)
             if bestMove in game.legal_moves:
                game.push(bestMove)
             else:
@@ -129,6 +133,7 @@ def main():
       else:
          print('Unknown outcome: ' + str(outcome))
    print(game)
+   print('Average time: ' + str(sum(times) / len(times)))
 
 # Click handler - Find which circle was clicked and what action should be taken.
 def clickHandler(game, mousePos, userColor):

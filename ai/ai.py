@@ -3,6 +3,7 @@ import random
 import chess
 
 movesConsidered = 0
+movesSkipped = 0
 
 class chessAI:
    def __init__(self, color, heuristic='pieceCount'):
@@ -20,13 +21,17 @@ class chessAI:
 
    def minimax(self, game, depth):
       global movesConsidered
+      global movesSkipped
       movesConsidered = 0
+      movesSkipped = 0
       move, score = self.minimaxHelper(game, depth, float('-inf'), float('inf'))
       print('Moves considered: ' + str(movesConsidered))
+      print('Moves skipped: ' + str(movesSkipped))
       return move
 
    def minimaxHelper(self, game, depth, alpha, beta):
       global movesConsidered
+      global movesSkipped
 
       # Determine if this is a MIN level or MAX level
       maximizing = game.turn == self.color
@@ -38,29 +43,61 @@ class chessAI:
 
       # Initialize the best move to the first move
       bestMoves = [moves[0]]
-      # Initialize the best score as -infinity when looking for maximum
-      # and +infinity when looking for minimum
-      bestScore = float('-inf') if maximizing else float('inf')
 
-      for move in moves:
-         # Make this move and check what the score is
-         game.push(move)
-         movesConsidered += 1
+      if maximizing:
+         bestScore = float('-inf')
+         for moveIndex, move in enumerate(moves):
+            # Make the move
+            game.push(move)
+            movesConsidered += 1
 
-         # Continue recursing down to find the score after <depth> moves
-         _, score = self.minimaxHelper(game, depth - 1, alpha, beta)
+            # Recursively call minimax
+            _, score = self.minimaxHelper(game, depth - 1, alpha, beta)
+            
+            # Reset the board
+            game.pop()
 
-         # Check if this move is better than the best move
-         isBestScore = (maximizing and score > bestScore) or \
-                       (not maximizing and score < bestScore)
+            # Evaluate best scores
+            if score > bestScore:
+               bestMoves = [move]
+               bestScore = score
+            elif score == bestScore:
+               bestMoves.append(move)
 
-         # Update the best move and score if this move is better.
-         if isBestScore:
-            bestMoves = [move]
-            bestScore = score
-         # If it ties, randomly choose between the two.
-         elif score == bestScore:
-            bestMoves.append(move)
+            # Alpha beta pruning
+            alpha = max(alpha, bestScore)
+            if bestScore >= beta:
+               movesSkipped = len(moves) - moveIndex - 1
+               break
+
+         return (random.choice(bestMoves), bestScore)
+      else:
+         bestScore = float('inf')
+         for moveIndex, move in enumerate(moves):
+            # Make the move
+            game.push(move)
+            movesConsidered += 1
+            
+            # Recursively call minimax
+            _, score = self.minimaxHelper(game, depth - 1, alpha, beta)
+
+            # Reset the board
+            game.pop()
+
+            # Evaluate best scores
+            if score < bestScore:
+               bestMoves = [move]
+               bestScore = score
+            elif score == bestScore:
+               bestMoves.append(move)
+
+            # Alpha beta pruning
+            beta = min(beta, bestScore)
+            if bestScore <= alpha:
+               movesSkipped = len(moves) - moveIndex - 1
+               break
+
+         return (random.choice(bestMoves), bestScore)
 
          # Reset the game copy to try the next move
          game.pop()
