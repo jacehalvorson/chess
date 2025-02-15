@@ -3,7 +3,6 @@ import random
 import chess
 
 movesConsidered = 0
-movesSkipped = 0
 
 class chessAI:
    def __init__(self, color, heuristic='pieceCount'):
@@ -21,17 +20,13 @@ class chessAI:
 
    def minimax(self, game, depth):
       global movesConsidered
-      global movesSkipped
       movesConsidered = 0
-      movesSkipped = 0
       move, score = self.minimaxHelper(game, depth, float('-inf'), float('inf'))
       print('Moves considered: ' + str(movesConsidered))
-      print('Moves skipped: ' + str(movesSkipped))
       return move
 
    def minimaxHelper(self, game, depth, alpha, beta):
       global movesConsidered
-      global movesSkipped
 
       # Determine if this is a MIN level or MAX level
       maximizing = game.turn == self.color
@@ -40,6 +35,16 @@ class chessAI:
       moves = list(game.legal_moves)
       if depth == 0 or len(moves) == 0:
          return (None, self.heuristic(game))
+
+      # Sort the moves by likelihood of being good
+      def moveSortFunction(move):
+         if game.gives_check(move):
+            return 2
+         elif game.is_capture(move):
+            return 1
+         return 0
+
+      moves.sort(key=lambda move: moveSortFunction(move), reverse=maximizing)
 
       # Initialize the best move to the first move
       bestMoves = [moves[0]]
@@ -61,13 +66,12 @@ class chessAI:
             if score > bestScore:
                bestMoves = [move]
                bestScore = score
+               alpha = max(alpha, bestScore)
             elif score == bestScore:
                bestMoves.append(move)
 
             # Alpha beta pruning
-            alpha = max(alpha, bestScore)
-            if bestScore >= beta:
-               movesSkipped = len(moves) - moveIndex - 1
+            if bestScore > beta:
                break
 
          return (random.choice(bestMoves), bestScore)
@@ -88,13 +92,12 @@ class chessAI:
             if score < bestScore:
                bestMoves = [move]
                bestScore = score
+               beta = min(beta, bestScore)
             elif score == bestScore:
                bestMoves.append(move)
 
             # Alpha beta pruning
-            beta = min(beta, bestScore)
-            if bestScore <= alpha:
-               movesSkipped = len(moves) - moveIndex - 1
+            if bestScore < alpha:
                break
 
          return (random.choice(bestMoves), bestScore)

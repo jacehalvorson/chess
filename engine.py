@@ -75,7 +75,7 @@ def main():
       if aiVsAi:
          if game.turn == chess.WHITE:
             start = timeit.default_timer()
-            bestMove = ai1.minimax(game, depth=2)
+            bestMove = ai1.minimax(game, depth=3)
             print(str(timeit.default_timer() - start) + ' seconds')
             times.append(timeit.default_timer() - start)
             if bestMove in game.legal_moves:
@@ -86,7 +86,7 @@ def main():
                break
          elif game.turn == chess.BLACK:
             start = timeit.default_timer()
-            bestMove = ai2.minimax(game, depth=2)
+            bestMove = ai2.minimax(game, depth=3)
             print(str(timeit.default_timer() - start) + ' seconds')
             times.append(timeit.default_timer() - start)
             if bestMove in game.legal_moves:
@@ -97,8 +97,9 @@ def main():
                break
       elif game.turn == aiColor:
          start = timeit.default_timer()
-         bestMove = ai.minimax(game, depth=2)
+         bestMove = ai.minimax(game, depth=3)
          print(str(timeit.default_timer() - start) + ' seconds')
+         times.append(timeit.default_timer() - start)
          if bestMove in game.legal_moves:
             game.push(bestMove)
          else:
