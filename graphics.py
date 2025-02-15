@@ -1,10 +1,28 @@
 import pygame
 import math
 import chess
-from constants import *
+import chess.svg
+import io
 
 blockArray = []
 selectedPiece = None
+
+# Constants for board graphics
+WINDOW_WIDTH = 600
+WINDOW_HEIGHT = 600
+BLOCKS_IN_ROW = 8
+BLOCKS_IN_COL = BLOCKS_IN_ROW
+NUM_BLOCKS = BLOCKS_IN_ROW * BLOCKS_IN_ROW
+BLOCK_SIZE = ( WINDOW_WIDTH / BLOCKS_IN_ROW )
+BLOCK_0_COLOR = '#52311e'
+BLOCK_1_COLOR = '#c59562'
+
+# Potential move circle
+POTENTIAL_MOVE = 5
+POTENTIAL_MOVE_COLOR = (0, 255, 255)
+POTENTIAL_MOVE_RADIUS = BLOCK_SIZE * (1/8)
+POTENTIAL_MOVE_BORDER_COLOR = (255, 255, 255)
+POTENTIAL_MOVE_BORDER_WIDTH = 1
 
 def initBoardGraphics():
    global blockArray
@@ -77,19 +95,19 @@ def drawPotentialMoves(surface, potentialMoves, userColor):
       # Place the block on the screen again
       surface.blit(block, (col * BLOCK_SIZE, row * BLOCK_SIZE))
 
-def drawPieceInSquare(surface, pieceText, row, col):
+def drawPieceInSquare(surface, piece, row, col):
    global blockArray
 
    # Find the position of the center of this block
    blockCenter = getBlockCenter(row, col)
 
    # Create text for piece
-   font = pygame.font.Font('freesansbold.ttf', 32)
-   text = font.render(pieceText, True, WHITE, None)
+   image = str(chess.svg.piece(piece))
+   imageSurface = pygame.image.load(io.BytesIO(image.encode()))
 
    # Create a rectangle to position text
-   textRect = text.get_rect()
-   textRect.center = blockCenter
+   rect = imageSurface.get_rect()
+   rect.center = blockCenter
 
    # Draw the text onto the block
-   surface.blit(text, textRect)
+   surface.blit(imageSurface, rect)

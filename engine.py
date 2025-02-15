@@ -1,8 +1,9 @@
 import pygame
 import chess
-from constants import *
 from graphics import *
 from ai import *
+
+CLOCK_RATE = 10
 
 # Holds blue dots that show potential moves from the user's selected piece
 potentialMoves = []
@@ -34,7 +35,7 @@ def main():
    # Loop until the window is closed by the user
    numIterations = 0
    loop = True
-   while loop and not game.is_game_over():
+   while loop and not game.is_game_over(claim_draw=True):
       # Check for input
       for event in pygame.event.get():
          if event.type == pygame.MOUSEBUTTONDOWN:
@@ -50,7 +51,7 @@ def main():
          piece = game.piece_at(square)
          if piece != None:
             (row, col) = squareToDisplayRowCol(square, userColor)
-            drawPieceInSquare(screen, piece.symbol(), row, col)
+            drawPieceInSquare(screen, piece, row, col)
 
       # Draw in the potential moves
       drawPotentialMoves(screen, potentialMoves, userColor)
@@ -74,8 +75,26 @@ def main():
    
    # Opposite of pygame.init()
    pygame.quit()
-   if game.outcome():
-      print(game.outcome().termination)
+
+   outcome = game.outcome(claim_draw=True)
+   if outcome is not None:
+      if outcome.termination == chess.Termination.CHECKMATE:
+         winner = 'White' if outcome.winner == True else 'Black'
+         print(f'{winner} wins with checkmate!')
+      elif outcome.termination == chess.Termination.STALEMATE:
+         print('Draw - Stalemate!')
+      elif outcome.termination == chess.Termination.INSUFFICIENT_MATERIAL:
+         print('Draw - Insufficient material!')
+      elif outcome.termination == chess.Termination.FIFTY_MOVES:
+         print('Draw - 50 moves without a capture or pawn move!')
+      elif outcome.termination == chess.Termination.SEVENTYFIVE_MOVES:
+         print('Draw - 75 moves without a capture or pawn move!')
+      elif outcome.termination == chess.Termination.THREEFOLD_REPETITION:
+         print('Draw - 3-fold repetition!')
+      elif outcome.termination == chess.Termination.FIVEFOLD_REPETITION:
+         print('Draw - 5-fold repetition!')
+      else:
+         print('Unknown outcome: ' + str(outcome))
    print(game)
 
 # Click handler - Find which circle was clicked and what action should be taken.
