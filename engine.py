@@ -1,14 +1,20 @@
+from os import environ
+environ['PYGAME_HIDE_SUPPORT_PROMPT'] = '1'
 import pygame
 import chess
+import timeit
+import sys
 from graphics import *
 from ai import *
 
-CLOCK_RATE = 10
+CLOCK_RATE = 60
 
 # Holds blue dots that show potential moves from the user's selected piece
 potentialMoves = []
 
 def main():
+   aiVsAi = True if len(sys.argv) > 1 and sys.argv[1] == 'ai' else False
+   
    # Initialize pygame
    pygame.init()
    
@@ -23,10 +29,14 @@ def main():
    aiColor = chess.BLACK if userColor == chess.WHITE else chess.WHITE
 
    # Initialize AI
-   ai = chessAI(game, aiColor, heuristic='pieceCount')
+   if aiVsAi:
+      ai1 = chessAI(chess.WHITE, heuristic='pieceCount')
+      ai2 = chessAI(chess.BLACK, heuristic='pieceCount')
+   else:
+      ai = chessAI(aiColor, heuristic='pieceCount')
 
    # Set up game window
-   screen = pygame.display.set_mode([ WINDOW_WIDTH, WINDOW_HEIGHT ])
+   screen = pygame.display.set_mode([WINDOW_WIDTH, WINDOW_HEIGHT])
    pygame.display.set_caption('Chess')
 
    # Initialize clock
@@ -60,8 +70,31 @@ def main():
       pygame.display.update()
 
       # AI's turn
-      if game.turn == aiColor:
-         bestMove = ai.minimax(depth=1)
+      if aiVsAi:
+         if game.turn == chess.WHITE:
+            start = timeit.default_timer()
+            bestMove = ai1.minimax(game, depth=2)
+            print(str(timeit.default_timer() - start) + ' seconds')
+            if bestMove in game.legal_moves:
+               game.push(bestMove)
+            else:
+               if not game.is_game_over():
+                  print('AI tried to make illegal move ' + str(bestMove))
+               break
+         elif game.turn == chess.BLACK:
+            start = timeit.default_timer()
+            bestMove = ai2.minimax(game, depth=2)
+            print(str(timeit.default_timer() - start) + ' seconds')
+            if bestMove in game.legal_moves:
+               game.push(bestMove)
+            else:
+               if not game.is_game_over():
+                  print('AI tried to make illegal move ' + str(bestMove))
+               break
+      elif game.turn == aiColor:
+         start = timeit.default_timer()
+         bestMove = ai.minimax(game, depth=2)
+         print(str(timeit.default_timer() - start) + ' seconds')
          if bestMove in game.legal_moves:
             game.push(bestMove)
          else:
