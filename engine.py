@@ -23,7 +23,7 @@ def main():
    aiColor = chess.BLACK if userColor == chess.WHITE else chess.WHITE
 
    # Initialize AI
-   ai = AI(game, aiColor)
+   ai = AI(game, aiColor, heuristic='pieceCount')
 
    # Set up game window
    screen = pygame.display.set_mode([ WINDOW_WIDTH, WINDOW_HEIGHT ])

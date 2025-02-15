@@ -1,14 +1,21 @@
 import copy
 import random
+import chess
 
 class AI:
-   def __init__(self, game, color):
+   def __init__(self, game, color, heuristic='pieceCount'):
       self.game = game
       self.color = color
-   
-   # Return the heuristic value for a player within a given game.
-   def getScore(self, game):
-      return random.random()
+
+      if heuristic == 'pieceCount':
+         self.heuristic = self.pieceCountHeuristic
+      elif heuristic == 'random':
+         self.heuristic = self.randomHeuristic
+      elif heuristic == 'worstPossibleMove':
+         self.heuristic = self.worstPossibleMove
+      else:
+         print('Unknown heuristic: ' + heuristic)
+         self.heuristic = self.pieceCountHeuristic
 
    def minimax(self, depth):
       move, score = self.minimaxHelper(self.game, 0, depth)
@@ -19,15 +26,15 @@ class AI:
 
       moves = list(gameCopy.legal_moves)
       if len(moves) == 0:
-         return (None, self.getScore(gameCopy))
+         return (None, self.heuristic(gameCopy))
       
       # Initialize the best move to the first move
       best_move = moves[0]
-      # Initialize the best score as -infinity when looking for maximum,
-      # or infinity when looking for minimum
-      best_score = float('-inf') if gameCopy.turn == self.color else float('inf')
+      # Initialize the best score as -infinity when looking for maximum
+      # and +infinity when looking for minimum
+      best_score = float('-inf') if game.turn == self.color else float('inf')
 
-      for move in moves:
+      for moveIndex, move in enumerate(moves):
          # Make this move and check what the score is
          gameCopy.push(move)
 
@@ -36,11 +43,11 @@ class AI:
             _, score = self.minimaxHelper(gameCopy, i+1, depth)
          else:
             # We've reached the depth, so just get the score of the current board
-            score = self.getScore(gameCopy)
+            score = self.heuristic(gameCopy)
 
-         # A "better" move is one that has a higher score if it's the AI's turn
-         # or a lower score if it's the player's turn.
-         isBestScore = (score > best_score) if game.turn == self.color else (score < best_score)
+         # Check if this move is better than the best move
+         isBestScore = (game.turn == self.color and score > best_score) or \
+                       (game.turn != self.color and score < best_score)
 
          # Update the best move and score if this move is better.
          if isBestScore:
@@ -51,3 +58,56 @@ class AI:
          gameCopy = game.copy()
                      
       return (best_move, best_score)
+
+   # Return the score of a given board based on piece counts
+   def pieceCountHeuristic(self, game):
+      score = 0
+
+      # Check for checkmate
+      if game.is_checkmate():
+         # print(game)
+         # print("Found checkmate for " + "White" if game.turn == chess.BLACK else "Black")
+         if game.outcome().winner == self.color:
+            return float('inf')
+         else:
+            return float('-inf')
+
+      # Check for draw
+      if game.can_claim_draw() or \
+         game.is_stalemate() or \
+         game.is_insufficient_material() or \
+         game.is_seventyfive_moves() or \
+         game.is_fivefold_repetition():
+         return 0
+
+      for square in chess.SQUARES:
+         piece = game.piece_at(square)
+         if piece is None or piece.piece_type == chess.KING:
+            continue
+
+         if piece.piece_type == chess.PAWN:
+            pieceValue = 1
+         elif piece.piece_type == chess.KNIGHT:
+            pieceValue = 3
+         elif piece.piece_type == chess.BISHOP:
+            pieceValue = 3
+         elif piece.piece_type == chess.ROOK:
+            pieceValue = 5
+         elif piece.piece_type == chess.QUEEN:
+            pieceValue = 9
+         else:
+            print('Unknown piece type: ' + str(piece.piece_type))
+            pieceValue = 0
+
+         if piece.color == self.color:
+            score += pieceValue
+         else:
+            score -= pieceValue
+
+      return score
+
+   def randomHeuristic(self, game):
+      return random.randint(-100, 100)
+
+   def worstPossibleMoveHeuristic(self, game):
+      return self.pieceCountHeuristic(game) * -1
