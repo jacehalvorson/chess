@@ -2,7 +2,7 @@ import copy
 import random
 import chess
 
-class AI:
+class chessAI:
    def __init__(self, game, color, heuristic='pieceCount'):
       self.game = game
       self.color = color
@@ -12,7 +12,7 @@ class AI:
       elif heuristic == 'random':
          self.heuristic = self.randomHeuristic
       elif heuristic == 'worstPossibleMove':
-         self.heuristic = self.worstPossibleMove
+         self.heuristic = self.worstPossibleMoveHeuristic
       else:
          print('Unknown heuristic: ' + heuristic)
          self.heuristic = self.pieceCountHeuristic

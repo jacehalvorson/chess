@@ -1,12 +1,14 @@
 # Chess Engine
 
-Imported from Checkers repository https://github.com/gpatt45/checkers_bot
+- [Chess Engine](#chess-engine)
+  - [How to Run](#how-to-run)
+    - [Windows](#windows)
+    - [Linux](#linux)
+  - [Heuristic options](#heuristic-options)
 
-Changes in progress to adapt the game to chess
+Play Chess against a minimax algorithm.
 
-## Architecture
-
-![Architecture of application](./images/architecture.png)
+> Note: Originally imported from Checkers repository https://github.com/gpatt45/checkers_bot
 
 ## How to Run
 
@@ -21,19 +23,19 @@ python3
 If you don't have pip installed, run this to install it.
 
 ```bash
-py -m ensurepip --upgrade
+python3 -m ensurepip --upgrade
 ```
 
 Install dependencies for this app.
 
 ```bash
-py -m pip install python-chess pygame
+python3 -m pip install python-chess pygame
 ```
 
 Run the app.
 
 ```bash
-py engine.py
+python3 engine.py
 ```
 
 ### Linux
@@ -58,3 +60,10 @@ Run the app.
 ```bash
 python3 engine.py
 ```
+
+## Heuristic options
+
+- pieceCount (default)
+  - This is the traditional count of points (pawns are 1, knights/bishops are 3, rooks are 5, queens are 9)
+- random
+- worstPossibleMove (opposite of pieceCount)
