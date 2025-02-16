@@ -1,9 +1,11 @@
 from os import environ
+# Hide the pygame support prompt (must be before pygame import)
 environ['PYGAME_HIDE_SUPPORT_PROMPT'] = '1'
+import argparse
 import pygame
 import chess
 import timeit
-import sys
+
 from graphics import *
 from ai import *
 
@@ -13,8 +15,23 @@ CLOCK_RATE = 60
 potentialMoves = []
 
 def main():
-   aiVsAi = True if len(sys.argv) > 1 and sys.argv[1] == 'ai' else False
+   parser = argparse.ArgumentParser(prog='python3 engine.py', description='Play chess against an AI or watch 2 AIs play against each other')
+   parser.add_argument('--ai', '-a', action='store_true', help='Instead of playing against AI, pin 2 of them against each other and watch them play')
+   parser.add_argument('--color', '-c', default='white', help='Choose the color on the bottom of the screen (white or black)')
+   parser.add_argument('--heuristic', default='pieceCount', help="Choose the AI's method of evaluating the board state. Options: pieceCount, random, worstPossibleMove")
+   args = parser.parse_args()
    
+   if args.color.lower() not in ['white', 'black']:
+      parser.print_help()
+      print('')
+      print('Invalid color argument. Must be either white or black')
+      return
+   if args.heuristic.lower() not in ['piececount', 'random', 'worstpossiblemove']:
+      parser.print_help()
+      print('')
+      print('Invalid heuristic argument. Must be either pieceCount, random, or worstPossibleMove')
+      return
+
    # Initialize pygame
    pygame.init()
    
@@ -25,15 +42,19 @@ def main():
    game = chess.Board()
    
    # Define colors
-   userColor = chess.WHITE
-   aiColor = chess.BLACK if userColor == chess.WHITE else chess.WHITE
+   if args.color.lower() == 'white':
+      userColor = chess.WHITE
+      aiColor = chess.BLACK
+   else:
+      userColor = chess.BLACK
+      aiColor = chess.WHITE
 
    # Initialize AI
-   if aiVsAi:
-      ai1 = chessAI(chess.WHITE, heuristic='random')
-      ai2 = chessAI(chess.BLACK, heuristic='random')
+   if args.ai:
+      ai1 = chessAI(chess.WHITE, heuristic=args.heuristic)
+      ai2 = chessAI(chess.BLACK, heuristic=args.heuristic)
    else:
-      ai = chessAI(aiColor, heuristic='pieceCount')
+      ai = chessAI(aiColor, heuristic=args.heuristic)
 
    # Set up game window
    screen = pygame.display.set_mode([WINDOW_WIDTH, WINDOW_HEIGHT])
@@ -69,15 +90,12 @@ def main():
       # Update the screen
       pygame.display.update()
 
-      times = []
-
       # AI's turn
-      if aiVsAi:
+      if args.ai:
          if game.turn == chess.WHITE:
             start = timeit.default_timer()
-            bestMove = ai1.minimax(game, depth=2)
+            bestMove = ai1.minimax(game, depth=3)
             print(str(timeit.default_timer() - start) + ' seconds')
-            times.append(timeit.default_timer() - start)
             if bestMove in game.legal_moves:
                game.push(bestMove)
             else:
@@ -86,9 +104,8 @@ def main():
                break
          elif game.turn == chess.BLACK:
             start = timeit.default_timer()
-            bestMove = ai2.minimax(game, depth=2)
+            bestMove = ai2.minimax(game, depth=3)
             print(str(timeit.default_timer() - start) + ' seconds')
-            times.append(timeit.default_timer() - start)
             if bestMove in game.legal_moves:
                game.push(bestMove)
             else:
@@ -97,7 +114,7 @@ def main():
                break
       elif game.turn == aiColor:
          start = timeit.default_timer()
-         bestMove = ai.minimax(game, depth=2)
+         bestMove = ai.minimax(game, depth=3)
          print(str(timeit.default_timer() - start) + ' seconds')
          if bestMove in game.legal_moves:
             game.push(bestMove)
@@ -133,7 +150,6 @@ def main():
       else:
          print('Unknown outcome: ' + str(outcome))
    print(game)
-   print('Average time: ' + str(sum(times) / len(times)))
 
 # Click handler - Find which circle was clicked and what action should be taken.
 def clickHandler(game, mousePos, userColor):
