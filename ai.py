@@ -1,8 +1,9 @@
 import copy
 import random
 import chess
+import timeit
 
-movesConsidered = 0
+nodesConsidered = 0
 
 class chessAI:
    def __init__(self, color, heuristic='pieceCount'):
@@ -19,14 +20,17 @@ class chessAI:
          self.heuristic = self.pieceCountHeuristic
 
    def minimax(self, game, depth):
-      global movesConsidered
-      movesConsidered = 0
+      global nodesConsidered
+      nodesConsidered = 0
+      start = timeit.default_timer()
+      
       move, score = self.minimaxHelper(game, depth, float('-inf'), float('inf'))
-      print('Moves considered: ' + str(movesConsidered))
+
+      print(f'{nodesConsidered} Nodes considered in {timeit.default_timer() - start} seconds with depth {depth}')
       return move
 
    def minimaxHelper(self, game, depth, alpha, beta):
-      global movesConsidered
+      global nodesConsidered
 
       # Determine if this is a MIN level or MAX level
       maximizing = game.turn == self.color
@@ -54,7 +58,7 @@ class chessAI:
          for moveIndex, move in enumerate(moves):
             # Make the move
             game.push(move)
-            movesConsidered += 1
+            nodesConsidered += 1
 
             # Recursively call minimax
             _, score = self.minimaxHelper(game, depth - 1, alpha, beta)
@@ -80,7 +84,7 @@ class chessAI:
          for moveIndex, move in enumerate(moves):
             # Make the move
             game.push(move)
-            movesConsidered += 1
+            nodesConsidered += 1
             
             # Recursively call minimax
             _, score = self.minimaxHelper(game, depth - 1, alpha, beta)

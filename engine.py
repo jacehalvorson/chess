@@ -1,22 +1,24 @@
-from os import environ
+from pathlib import Path
+import os
 # Hide the pygame support prompt (must be before pygame import)
-environ['PYGAME_HIDE_SUPPORT_PROMPT'] = '1'
+os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = '1'
 import argparse
 import pygame
 import chess
-import timeit
+import chess.engine
 
 from graphics import *
-from ai import *
+from ai import chessAI
 
 CLOCK_RATE = 60
+DEPTH = 3
 
 # Holds blue dots that show potential moves from the user's selected piece
 potentialMoves = []
 
 def main():
    parser = argparse.ArgumentParser(prog='python3 engine.py', description='Play chess against an AI or watch 2 AIs play against each other')
-   parser.add_argument('--ai', '-a', action='store_true', help='Instead of playing against AI, pin 2 of them against each other and watch them play')
+   parser.add_argument('--stockfish', '-s', action='store_true', help='Instead of playing against the AI, watch it go up against Stockfish')
    parser.add_argument('--color', '-c', default='white', help='Choose the color on the bottom of the screen (white or black)')
    parser.add_argument('--heuristic', default='pieceCount', help="Choose the AI's method of evaluating the board state. Options: pieceCount, random, worstPossibleMove")
    args = parser.parse_args()
@@ -25,12 +27,12 @@ def main():
       parser.print_help()
       print('')
       print('Invalid color argument. Must be either white or black')
-      return
+      return 1
    if args.heuristic.lower() not in ['piececount', 'random', 'worstpossiblemove']:
       parser.print_help()
       print('')
       print('Invalid heuristic argument. Must be either pieceCount, random, or worstPossibleMove')
-      return
+      return 1
 
    # Initialize pygame
    pygame.init()
@@ -50,9 +52,18 @@ def main():
       aiColor = chess.WHITE
 
    # Initialize AI
-   if args.ai:
-      ai1 = chessAI(chess.WHITE, heuristic=args.heuristic)
-      ai2 = chessAI(chess.BLACK, heuristic=args.heuristic)
+   if args.stockfish:
+      # Check if Stockfish is in the current directory
+      if not os.path.isfile('stockfish.exe'):
+         print()
+         print("Cannot find Stockfish executable. Download from https://stockfishchess.org/download/ "
+               "and copy the *.exe file into this repository, renaming it to 'stockfish.exe'")
+         return 1
+
+      # Create the AIs
+      ai = chessAI(userColor, heuristic=args.heuristic)
+      stockfish = chess.engine.SimpleEngine.popen_uci('stockfish.exe')
+      stockfish.configure({"UCI_elo": 1320})
    else:
       ai = chessAI(aiColor, heuristic=args.heuristic)
 
@@ -90,45 +101,29 @@ def main():
       # Update the screen
       pygame.display.update()
 
-      # AI's turn
-      if args.ai:
-         if game.turn == chess.WHITE:
-            start = timeit.default_timer()
-            bestMove = ai1.minimax(game, depth=3)
-            print(str(timeit.default_timer() - start) + ' seconds')
-            if bestMove in game.legal_moves:
-               game.push(bestMove)
-            else:
-               if not game.is_game_over():
-                  print('AI tried to make illegal move ' + str(bestMove))
-               break
-         elif game.turn == chess.BLACK:
-            start = timeit.default_timer()
-            bestMove = ai2.minimax(game, depth=3)
-            print(str(timeit.default_timer() - start) + ' seconds')
-            if bestMove in game.legal_moves:
-               game.push(bestMove)
-            else:
-               if not game.is_game_over():
-                  print('AI tried to make illegal move ' + str(bestMove))
-               break
-      elif game.turn == aiColor:
-         start = timeit.default_timer()
-         bestMove = ai.minimax(game, depth=3)
-         print(str(timeit.default_timer() - start) + ' seconds')
-         if bestMove in game.legal_moves:
+      # If playing against Stockfish, then play the best move from the current turn
+      if args.stockfish:
+         if game.turn == userColor:
+            bestMove = ai.minimax(game, depth=DEPTH)
             game.push(bestMove)
-         else:
-            if not game.is_game_over():
-               print('AI tried to make illegal move ' + str(bestMove))
-            break
-               
+         elif game.turn == aiColor:
+            result = stockfish.play(game, chess.engine.Limit(time=0.1), ponder=False)
+            game.push(result.move)
+      # If the user is playing then play the bext move from the AI
+      else:
+         if game.turn == aiColor:
+            bestMove = ai.minimax(game, depth=DEPTH)
+            game.push(bestMove)
+
       # Ensure the game doesn't run faster than CLOCK_RATE fps
       clock.tick(CLOCK_RATE)
       numIterations += 1
    
    # Opposite of pygame.init()
    pygame.quit()
+
+   if args.stockfish:
+      stockfish.quit()
 
    outcome = game.outcome(claim_draw=True)
    if outcome is not None:
@@ -177,6 +172,8 @@ def clickHandler(game, mousePos, userColor):
    # If the user clicks elsewhere then clear potential moves
    else:
       potentialMoves = []
+   
+   return 0
 
 if __name__ == '__main__':
    main()

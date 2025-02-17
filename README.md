@@ -8,11 +8,12 @@
     - [Install Python](#install-python)
       - [Windows](#windows)
       - [Linux](#linux)
+    - [Install Stockfish (Optional)](#install-stockfish-optional)
   - [Heuristic options](#heuristic-options)
 
 Play Chess against a minimax algorithm.
 
-> Note: Originally imported from Checkers repository https://github.com/gpatt45/checkers_bot
+Or watch it try to hold its own against Stockfish. Currently it plays againast a Stockfish limited to 1320 and it gets crushed. Improvements are in progress for a better heuristic, potentially incorporating neural networks.
 
 ## How to Run
 
@@ -31,7 +32,7 @@ Play chess against an AI or watch 2 AIs play against each other
 
 options:
   -h, --help            show this help message and exit
-  --ai, -a              Instead of playing against AI, pin 2 of them against each other and watch them play
+  --stockfish, -s       Instead of playing against AI, pin 2 of them against each other and watch them play
   --color, -c COLOR     Choose the color on the bottom of the screen (white or black)
   --heuristic HEURISTIC
                         Choose the AI's method of evaluating the board state. Options: pieceCount, random, worstPossibleMove
@@ -59,10 +60,8 @@ cd chess
 If you don't have Python and pip installed, run this to open the Microsoft Store and install Python 3. Then install pip.
 
 ```bash
-# Install Python 3
 python3
 # Follow prompts opened by Microsoft Store
-# Install pip
 python3 -m ensurepip --upgrade
 ```
 
@@ -88,6 +87,10 @@ Install dependencies for this app.
 ```bash
 python3 -m pip install python-chess pygame
 ```
+
+### Install Stockfish (Optional)
+
+Download from https://stockfishchess.org/download/ and copy the *.exe file into this repository, renaming it to 'stockfish.exe'
 
 ## Heuristic options
 
