@@ -94,7 +94,9 @@ Download from https://stockfishchess.org/download/ and copy the *.exe file into 
 
 ## Heuristic options
 
-- pieceCount (default)
+- position (default)
+  - Factor in positional aspects of a state on top of piece count
+- pieceCount
   - This is the traditional count of points (pawns are 1, knights/bishops are 3, rooks are 5, queens are 9)
 - random
-- worstPossibleMove (opposite of pieceCount)
+- worst (opposite of position)

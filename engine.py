@@ -20,7 +20,7 @@ def main():
    parser = argparse.ArgumentParser(prog='python3 engine.py', description='Play chess against an AI or watch 2 AIs play against each other')
    parser.add_argument('--stockfish', '-s', action='store_true', help='Instead of playing against the AI, watch it go up against Stockfish')
    parser.add_argument('--color', '-c', default='white', help='Choose the color on the bottom of the screen (white or black)')
-   parser.add_argument('--heuristic', default='pieceCount', help="Choose the AI's method of evaluating the board state. Options: pieceCount, random, worstPossibleMove")
+   parser.add_argument('--heuristic', default='position', help="Choose the AI's method of evaluating the board state. Options: position, pieceCount, random, worst")
    args = parser.parse_args()
    
    if args.color.lower() not in ['white', 'black']:
@@ -28,10 +28,10 @@ def main():
       print('')
       print('Invalid color argument. Must be either white or black')
       return 1
-   if args.heuristic.lower() not in ['piececount', 'random', 'worstpossiblemove']:
+   if args.heuristic.lower() not in ['piececount', 'position', 'random', 'worst']:
       parser.print_help()
       print('')
-      print('Invalid heuristic argument. Must be either pieceCount, random, or worstPossibleMove')
+      print('Invalid heuristic argument. Must be either pieceCount, position, random, or worst')
       return 1
 
    # Initialize pygame
@@ -63,7 +63,7 @@ def main():
       # Create the AIs
       ai = chessAI(userColor, heuristic=args.heuristic)
       stockfish = chess.engine.SimpleEngine.popen_uci('stockfish.exe')
-      stockfish.configure({"UCI_elo": 1320})
+      stockfish.configure({"UCI_elo": 1320, "UCI_LimitStrength": "true"})
    else:
       ai = chessAI(aiColor, heuristic=args.heuristic)
 

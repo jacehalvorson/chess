@@ -3,17 +3,27 @@ import random
 import chess
 import timeit
 
+PIECE_VALUES = {
+   chess.PAWN: 1,
+   chess.KNIGHT: 3,
+   chess.BISHOP: 3,
+   chess.ROOK: 5,
+   chess.QUEEN: 9
+}
+
 nodesConsidered = 0
 
 class chessAI:
    def __init__(self, color, heuristic='pieceCount'):
       self.color = color
 
-      if heuristic == 'pieceCount':
+      if heuristic == 'position':
+         self.heuristic = self.pieceCountHeuristic
+      elif heuristic == 'pieceCount':
          self.heuristic = self.pieceCountHeuristic
       elif heuristic == 'random':
          self.heuristic = self.randomHeuristic
-      elif heuristic == 'worstPossibleMove':
+      elif heuristic == 'worst':
          self.heuristic = self.worstPossibleMoveHeuristic
       else:
          print('Unknown heuristic: ' + heuristic)
@@ -113,14 +123,6 @@ class chessAI:
 
    # Return the score of a given board based on piece counts
    def pieceCountHeuristic(self, game):
-      PIECE_VALUES = {
-         chess.PAWN: 1,
-         chess.KNIGHT: 3,
-         chess.BISHOP: 3,
-         chess.ROOK: 5,
-         chess.QUEEN: 9
-      }
-
       score = 0
 
       # Only check for checkmate/draw if the game is over to save time
@@ -153,8 +155,41 @@ class chessAI:
 
       return score
 
+   # Start with pieceCount and include attackers, checks, and visible squares
+   def positionHeuristic(self, game):
+      CHECK_BIAS = 5
+      ATTACKER_WEIGHT = 4
+      SUPPORTER_WEIGHT = 1
+      VISIBLE_WEIGHT = 2
+
+      score = pieceCountHeuristic(game) * 10
+      
+      if game.is_check():
+         # Take away points if currently in check
+         if game.turn == self.color:
+            score -= CHECK_BIAS
+         else:
+            score += CHECK_BIAS
+
+      # For each piece of the AI's
+      for piece in game.piece_map().values():
+         if piece.color is not self.color:
+            continue
+
+         # Take away points for every attacker on this piece
+         score -= ATTACKER_WEIGHT * PIECE_VALUES[piece.piece_type] * len(game.attackers(not self.color, piece.square))
+
+         # Add points for every piece that's supporting this one
+         score += SUPPORTER_WEIGHT * PIECE_VALUES[piece.piece_type] * len(game.attackers(self.color, piece.square))
+
+         # Add points for every square that this piece can see
+         for square in game.attacks(piece.square):
+            score += VISIBLE_WEIGHT
+      
+      return score
+
    def randomHeuristic(self, game):
       return random.randint(-100, 100)
 
    def worstPossibleMoveHeuristic(self, game):
-      return self.pieceCountHeuristic(game) * -1
+      return self.positionHeuristic(game) * -1
