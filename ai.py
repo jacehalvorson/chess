@@ -33,32 +33,31 @@ class chessAI:
       global nodesConsidered
       nodesConsidered = 0
       start = timeit.default_timer()
-      
-      move, score = self.minimaxHelper(game, depth, float('-inf'), float('inf'))
+
+      legalMoves = list(game.legal_moves)
+
+      # Iterative deepening
+      for i in range(1, depth + 1):
+         print(f'Depth {i}')
+         move, score, allScores = self.minimaxHelper(game, legalMoves, depth, float('-inf'), float('inf'))
+         legalMoves.sort(key=lambda move: allScores[move], reverse=True)
+         if len(legalMoves) > 4:
+            print(f'Top 5 moves: {legalMoves[0]} {legalMoves[1]} {legalMoves[2]} {legalMoves[3]} {legalMoves[4]}')
 
       print(f'{nodesConsidered} Nodes considered in {timeit.default_timer() - start} seconds with depth {depth}')
       return move
 
-   def minimaxHelper(self, game, depth, alpha, beta):
+   def minimaxHelper(self, game, moves, depth, alpha, beta):
       global nodesConsidered
+
+      # Dictionary to map moves to their scores
+      moveScores = {}
+
+      if depth == 0 or game.is_game_over():
+         return (None, self.heuristic(game), moveScores)
 
       # Determine if this is a MIN level or MAX level
       maximizing = game.turn == self.color
-      
-      # Get all legal moves
-      moves = list(game.legal_moves)
-      if depth == 0 or len(moves) == 0:
-         return (None, self.heuristic(game))
-
-      # Sort the moves by likelihood of being good
-      def moveSortFunction(move):
-         if game.gives_check(move):
-            return 2
-         elif game.is_capture(move):
-            return 1
-         return 0
-
-      moves.sort(key=lambda move: moveSortFunction(move), reverse=maximizing)
 
       # Initialize the best move to the first move
       bestMoves = [moves[0]]
@@ -71,7 +70,8 @@ class chessAI:
             nodesConsidered += 1
 
             # Recursively call minimax
-            _, score = self.minimaxHelper(game, depth - 1, alpha, beta)
+            _, score, _ = self.minimaxHelper(game, list(game.legal_moves), depth - 1, alpha, beta)
+            moveScores[move] = score
             
             # Reset the board
             game.pop()
@@ -88,7 +88,7 @@ class chessAI:
             if bestScore > beta:
                break
 
-         return (random.choice(bestMoves), bestScore)
+         return (random.choice(bestMoves), bestScore, moveScores)
       else:
          bestScore = float('inf')
          for moveIndex, move in enumerate(moves):
@@ -97,7 +97,8 @@ class chessAI:
             nodesConsidered += 1
             
             # Recursively call minimax
-            _, score = self.minimaxHelper(game, depth - 1, alpha, beta)
+            _, score, _ = self.minimaxHelper(game, list(game.legal_moves), depth - 1, alpha, beta)
+            moveScores[move] = score
 
             # Reset the board
             game.pop()
@@ -114,12 +115,12 @@ class chessAI:
             if bestScore < alpha:
                break
 
-         return (random.choice(bestMoves), bestScore)
+         return (random.choice(bestMoves), bestScore, moveScores)
 
          # Reset the game copy to try the next move
          game.pop()
 
-      return (random.choice(bestMoves), bestScore)
+      return (random.choice(bestMoves), bestScore, moveScores)
 
    # Return the score of a given board based on piece counts
    def pieceCountHeuristic(self, game):
