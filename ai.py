@@ -12,13 +12,14 @@ PIECE_VALUES = {
 }
 
 nodesConsidered = 0
+verbose = 1
 
 class chessAI:
-   def __init__(self, color, heuristic='pieceCount'):
+   def __init__(self, color, heuristic='position'):
       self.color = color
 
       if heuristic == 'position':
-         self.heuristic = self.pieceCountHeuristic
+         self.heuristic = self.positionHeuristic
       elif heuristic == 'pieceCount':
          self.heuristic = self.pieceCountHeuristic
       elif heuristic == 'random':
@@ -36,16 +37,25 @@ class chessAI:
 
       legalMoves = list(game.legal_moves)
 
-      # Iterative deepening
+      # Iterative deepening - Start with depth 1 and sort by score, then increase depth
+      # sorting at each step. This allows for efficient pruning
       for i in range(1, depth + 1):
-         print(f'Depth {i}')
-         move, score, allScores = self.minimaxHelper(game, legalMoves, depth, float('-inf'), float('inf'))
+         moveSequence, score, allScores = self.minimaxHelper(game, legalMoves, i, float('-inf'), float('inf'))
          legalMoves.sort(key=lambda move: allScores[move], reverse=True)
-         if len(legalMoves) > 4:
-            print(f'Top 5 moves: {legalMoves[0]} {legalMoves[1]} {legalMoves[2]} {legalMoves[3]} {legalMoves[4]}')
 
-      print(f'{nodesConsidered} Nodes considered in {timeit.default_timer() - start} seconds with depth {depth}')
-      return move
+      if verbose >= 2:
+         print('Planning on', end=' ')
+         for move in moveSequence:
+            print(str(move), end=' ')
+         print()
+         for move in legalMoves:
+            print(f'{move} {allScores[move]}', end=' ')
+         print()
+
+      if verbose >= 1:
+         print(f'{nodesConsidered} Nodes considered in {timeit.default_timer() - start} seconds with depth {depth}')
+
+      return moveSequence[0]
 
    def minimaxHelper(self, game, moves, depth, alpha, beta):
       global nodesConsidered
@@ -64,13 +74,13 @@ class chessAI:
 
       if maximizing:
          bestScore = float('-inf')
-         for moveIndex, move in enumerate(moves):
+         for move in moves:
             # Make the move
             game.push(move)
             nodesConsidered += 1
 
             # Recursively call minimax
-            _, score, _ = self.minimaxHelper(game, list(game.legal_moves), depth - 1, alpha, beta)
+            nextMove, score, _ = self.minimaxHelper(game, list(game.legal_moves), depth - 1, alpha, beta)
             moveScores[move] = score
             
             # Reset the board
@@ -88,16 +98,15 @@ class chessAI:
             if bestScore > beta:
                break
 
-         return (random.choice(bestMoves), bestScore, moveScores)
       else:
          bestScore = float('inf')
-         for moveIndex, move in enumerate(moves):
+         for move in moves:
             # Make the move
             game.push(move)
             nodesConsidered += 1
             
             # Recursively call minimax
-            _, score, _ = self.minimaxHelper(game, list(game.legal_moves), depth - 1, alpha, beta)
+            nextMove, score, _ = self.minimaxHelper(game, list(game.legal_moves), depth - 1, alpha, beta)
             moveScores[move] = score
 
             # Reset the board
@@ -115,12 +124,11 @@ class chessAI:
             if bestScore < alpha:
                break
 
-         return (random.choice(bestMoves), bestScore, moveScores)
+      moveSequence = [random.choice(bestMoves)]
+      if nextMove is not None:
+         moveSequence.extend(nextMove)
 
-         # Reset the game copy to try the next move
-         game.pop()
-
-      return (random.choice(bestMoves), bestScore, moveScores)
+      return (moveSequence, bestScore, moveScores)
 
    # Return the score of a given board based on piece counts
    def pieceCountHeuristic(self, game):
@@ -161,9 +169,9 @@ class chessAI:
       CHECK_BIAS = 5
       ATTACKER_WEIGHT = 4
       SUPPORTER_WEIGHT = 1
-      VISIBLE_WEIGHT = 2
+      VISIBLE_WEIGHT = 1
 
-      score = pieceCountHeuristic(game) * 10
+      score = self.pieceCountHeuristic(game) * 10
       
       if game.is_check():
          # Take away points if currently in check
@@ -173,18 +181,18 @@ class chessAI:
             score += CHECK_BIAS
 
       # For each piece of the AI's
-      for piece in game.piece_map().values():
-         if piece.color is not self.color:
+      for square, piece in game.piece_map().items():
+         if piece.color is not self.color or piece.piece_type == chess.KING:
             continue
 
          # Take away points for every attacker on this piece
-         score -= ATTACKER_WEIGHT * PIECE_VALUES[piece.piece_type] * len(game.attackers(not self.color, piece.square))
+         score -= ATTACKER_WEIGHT * PIECE_VALUES[piece.piece_type] * len(game.attackers(not self.color, square))
 
          # Add points for every piece that's supporting this one
-         score += SUPPORTER_WEIGHT * PIECE_VALUES[piece.piece_type] * len(game.attackers(self.color, piece.square))
+         score += SUPPORTER_WEIGHT * PIECE_VALUES[piece.piece_type] * len(game.attackers(self.color, square))
 
          # Add points for every square that this piece can see
-         for square in game.attacks(piece.square):
+         for square in game.attacks(square):
             score += VISIBLE_WEIGHT
       
       return score
