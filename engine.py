@@ -10,7 +10,7 @@ import chess.engine
 from graphics import *
 from ai import chessAI
 
-CLOCK_RATE = 60
+CLOCK_RATE = 10
 DEPTH = 3
 
 # Holds blue dots that show potential moves from the user's selected piece
@@ -107,11 +107,11 @@ def main():
             bestMove = ai.minimax(game, depth=DEPTH)
             game.push(bestMove)
          elif game.turn == aiColor:
-            result = stockfish.play(game, chess.engine.Limit(time=0.1), ponder=False)
+            result = stockfish.play(game, chess.engine.Limit(time=1), ponder=False)
             game.push(result.move)
-      # If the user is playing then play the bext move from the AI
+      # If the user is playing then play the best move from the AI
       else:
-         if game.turn == aiColor:
+         if game.turn == aiColor and not game.is_game_over(claim_draw=True):
             bestMove = ai.minimax(game, depth=DEPTH)
             game.push(bestMove)
 
