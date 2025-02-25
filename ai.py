@@ -8,12 +8,15 @@ PIECE_VALUES = {
    chess.KNIGHT: 3,
    chess.BISHOP: 3,
    chess.ROOK: 5,
-   chess.QUEEN: 9
+   chess.QUEEN: 9,
+   chess.KING: 0
 }
 
 nodesConsidered = 0
 verbose = 1
-
+heuristicTime = 0
+heuristicCount = 0
+      
 class chessAI:
    def __init__(self, color, heuristic='position'):
       self.color = color
@@ -54,6 +57,7 @@ class chessAI:
 
       if verbose >= 1:
          print(f'{nodesConsidered} Nodes considered in {timeit.default_timer() - start} seconds with depth {depth}')
+         print(f'Average heuristic time: {heuristicTime / heuristicCount * 1000000} µs')
 
       return moveSequence[0]
 
@@ -166,35 +170,68 @@ class chessAI:
 
    # Start with pieceCount and include attackers, checks, and visible squares
    def positionHeuristic(self, game):
+      global heuristicTime
+      global heuristicCount
+      
       CHECK_BIAS = 5
-      ATTACKER_WEIGHT = 4
+      PIECE_WEIGHT = 15
+      ATTACKER_WEIGHT = 3
       SUPPORTER_WEIGHT = 1
       VISIBLE_WEIGHT = 1
 
-      score = self.pieceCountHeuristic(game) * 10
+      score = 0
+
+      start = timeit.default_timer()
       
+      # Only check for checkmate/draw if the game is over to save time
+      if game.is_game_over():
+         # Check for checkmate
+         if game.is_checkmate():
+            if game.outcome().winner == self.color:
+               return float('inf')
+            else:
+               return float('-inf')
+
+         # Check for draw
+         if game.can_claim_draw() or \
+            game.is_stalemate() or \
+            game.is_insufficient_material() or \
+            game.is_seventyfive_moves() or \
+            game.is_fivefold_repetition():
+            return 0
+
       if game.is_check():
-         # Take away points if currently in check
          if game.turn == self.color:
             score -= CHECK_BIAS
          else:
             score += CHECK_BIAS
 
-      # For each piece of the AI's
-      for square, piece in game.piece_map().items():
-         if piece.color is not self.color or piece.piece_type == chess.KING:
-            continue
-
+      # For each piece
+      for square, piece in game.piece_map(mask=(game.occupied_co[self.color])).items():
+         # Piece count
          # Take away points for every attacker on this piece
-         score -= ATTACKER_WEIGHT * PIECE_VALUES[piece.piece_type] * len(game.attackers(not self.color, square))
-
          # Add points for every piece that's supporting this one
-         score += SUPPORTER_WEIGHT * PIECE_VALUES[piece.piece_type] * len(game.attackers(self.color, square))
-
          # Add points for every square that this piece can see
-         for square in game.attacks(square):
-            score += VISIBLE_WEIGHT
-      
+         score += \
+            PIECE_WEIGHT * PIECE_VALUES[piece.piece_type] - \
+            ATTACKER_WEIGHT * PIECE_VALUES[piece.piece_type] * len(game.attackers(not self.color, square)) + \
+            SUPPORTER_WEIGHT * PIECE_VALUES[piece.piece_type] * len(game.attackers(self.color, square)) + \
+            VISIBLE_WEIGHT * len(game.attacks(square))
+
+      for square, piece in game.piece_map(mask=(game.occupied_co[not self.color])).items():
+         # Piece count
+         # Take away points for every attacker on this piece
+         # Add points for every piece that's supporting this one
+         # Add points for every square that this piece can see
+         score -= \
+            PIECE_WEIGHT * PIECE_VALUES[piece.piece_type] - \
+            ATTACKER_WEIGHT * PIECE_VALUES[piece.piece_type] * len(game.attackers(self.color, square)) + \
+            SUPPORTER_WEIGHT * PIECE_VALUES[piece.piece_type] * len(game.attackers(not self.color, square)) + \
+            VISIBLE_WEIGHT * len(game.attacks(square))
+
+      heuristicTime += timeit.default_timer() - start
+      heuristicCount += 1
+
       return score
 
    def randomHeuristic(self, game):
